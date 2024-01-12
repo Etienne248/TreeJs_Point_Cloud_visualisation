@@ -46,13 +46,13 @@ loader.load( './Zaghetto.pcd', function ( points ) {
     points.name = 'Zaghetto.pcd';
     scene.add( points );
     
-    //
-    
-    
-    gui.add( points.material, 'size', 0.001, 0.01 )
-    gui.addColor( points.material, 'color' )
-    gui.open();
-    
+    points.visible = false
+
+
+    const test = gui.addFolder( 'test' );
+    test.add( points.material, 'size', 0.001, 0.01 )
+    test.addColor( points.material, 'color' )
+    test.add(points,'visible').name('visible')    
     
 } );
 
@@ -62,27 +62,31 @@ plyloader.load( './out.ply', function ( geometry ) {
     // geometry.computeVertexNormals();
     
     // const material = new THREE.MeshStandardMaterial( { vertexColors: true, flatShading: true } );
-    const material = new THREE.PointsMaterial( { size: 1, vertexColors: true, sizeAttenuation: false } );
+    const material = new THREE.PointsMaterial( { size: 1.5, vertexColors: true, sizeAttenuation: false } );
     
-    // let material = new THREE.ShaderMaterial({
-    //     transparent: true,
-    //     vertexColors: true,
-    //     uniforms: {
-    //         size: {value: 10},
-    //         scale: {value: 1},
-    //         color: {value: new THREE.Color('white')}
-    //     },
-    //     vertexShader: THREE.ShaderLib.points.vertexShader,
-    //     fragmentShader: `
-    //     uniform vec3 color;
-    //     varying vec3 vColor;
-    //     void main() {
-    //         vec2 xy = gl_PointCoord.xy - vec2(0.5);
-    //         float ll = length(xy);
-    //         gl_FragColor = vec4(vColor, step(ll, 0.5));
-    //     }
-    //     `
-    // });
+    const shaderMaterial = new THREE.ShaderMaterial({
+        // transparent: true,
+        // depthWrite: false,
+
+        vertexColors: true,
+        uniforms: {
+            size: {value: 3},
+            scale: {value: 1},
+            color: {value: new THREE.Color('white')}
+        },
+        vertexShader: THREE.ShaderLib.points.vertexShader,
+        fragmentShader: `
+        uniform vec3 color;
+        varying vec3 vColor;
+        void main() {
+            vec2 xy = gl_PointCoord.xy - vec2(0.5);
+            float ll = length(xy);
+            if ( ll > 0.5 ) discard;
+            gl_FragColor = vec4(vColor, 1.0);
+            // gl_FragColor = vec4(vColor, step(ll, 0.5));
+        }
+        `
+    });
 
     const mesh = new THREE.Points( geometry, material );
 
@@ -99,9 +103,13 @@ plyloader.load( './out.ply', function ( geometry ) {
 
     scene.add( mesh );
     scene.add( meshm );
-    gui.add(mesh.material, 'size', 0.01, 2 )
-    gui.add(mesh,'visible')
-    gui.add(meshm,'visible').name('mesh')
+
+    const PointCloud = gui.addFolder( 'PointCloud' );
+    PointCloud.add(material, 'size', 0.01, 3 )
+    PointCloud.add(mesh,'visible').name('points')
+    PointCloud.add(meshm,'visible').name('mesh')
+    PointCloud.add(mesh,'material',{none: material, Custom_Shader:shaderMaterial}).name('Custom Shader')
+    PointCloud.add(shaderMaterial.uniforms.size, 'value', 1, 15 ).name('CustomShaderSize')
 } );
 
 const composer = new EffectComposer(renderer);
@@ -109,7 +117,7 @@ const renderPass = new RenderPass(scene, camera);
 const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
     0.1, // strength
-    0.5, // radius
+    0.1, // radius
     0.1 // threshold
 );
 const outputPass = new OutputPass();
@@ -130,6 +138,9 @@ bloomFolder.add( bloomPass, 'radius', 0.0, 1.0 ).step( 0.01 )
 //     renderer.toneMappingExposure = Math.pow( value, 4.0 );
 
 // } );
+
+
+gui.open();
 
 function animate() {
     requestAnimationFrame(animate);
