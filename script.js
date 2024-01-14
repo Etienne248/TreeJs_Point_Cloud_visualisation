@@ -56,6 +56,7 @@ loader.load( './Zaghetto.pcd', function ( points ) {
     
 } );
 
+let points
 const plyloader = new PLYLoader();
 plyloader.load( './out.ply', function ( geometry ) {
     
@@ -88,28 +89,30 @@ plyloader.load( './out.ply', function ( geometry ) {
         `
     });
 
-    const mesh = new THREE.Points( geometry, material );
+    points = new THREE.Points( geometry, material );
 
-    const meshm = new THREE.Mesh( geometry, material );
-    meshm.visible = false
+    const mesh = new THREE.Mesh( geometry, material );
+    mesh.visible = false
     
     // mesh.position.y = - 0.2;
     // mesh.position.z = 0.3;
     // mesh.rotation.x = - Math.PI / 2;
-    mesh.scale.multiplyScalar( 1 );
+    points.scale.multiplyScalar( 1 );
     
     // mesh.castShadow = true;
     // mesh.receiveShadow = true;
 
+    scene.add( points );
     scene.add( mesh );
-    scene.add( meshm );
 
     const PointCloud = gui.addFolder( 'PointCloud' );
     PointCloud.add(material, 'size', 0.01, 3 )
-    PointCloud.add(mesh,'visible').name('points')
-    PointCloud.add(meshm,'visible').name('mesh')
-    PointCloud.add(mesh,'material',{none: material, Custom_Shader:shaderMaterial}).name('Custom Shader')
+    PointCloud.add(points,'visible').name('points')
+    PointCloud.add(mesh,'visible').name('mesh')
+    PointCloud.add(points,'material',{none: material, Custom_Shader:shaderMaterial}).name('Custom Shader')
     PointCloud.add(shaderMaterial.uniforms.size, 'value', 1, 15 ).name('CustomShaderSize')
+
+    animate();
 } );
 
 const composer = new EffectComposer(renderer);
@@ -139,17 +142,41 @@ bloomFolder.add( bloomPass, 'radius', 0.0, 1.0 ).step( 0.01 )
 
 // } );
 
-
 gui.open();
+
+const raycaster = new THREE.Raycaster();
+raycaster.params.Points.threshold = 0.005;
+
+let pointerPosition = { x: 0, y: 0 };
+window.addEventListener('pointermove', (event) => {
+    pointerPosition.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    pointerPosition.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+});
+
+
+const sphereGeometry = new THREE.SphereGeometry( 0.01, 32, 32 );
+const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+const sphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
+scene.add( sphere );
 
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
+    raycaster.setFromCamera(pointerPosition, camera);
+    const intersects = raycaster.intersectObject(points,false);
+    if (intersects.length > 0) {
+        console.log(intersects[0]);
+        sphere.position.copy( intersects[0].point );
+    }
+    // else {
+    //     points.material.opacity = 1;
+    // }
+
     // renderer.render(scene, camera);
     composer.render(scene, camera);
 }
 
-animate();
+// animate();
 
 window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
