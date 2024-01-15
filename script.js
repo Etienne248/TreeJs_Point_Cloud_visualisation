@@ -145,32 +145,57 @@ bloomFolder.add( bloomPass, 'radius', 0.0, 1.0 ).step( 0.01 )
 gui.open();
 
 const raycaster = new THREE.Raycaster();
-raycaster.params.Points.threshold = 0.005;
+raycaster.params.Points.threshold = 0.05;
 
+let isDragging = false;
 let pointerPosition = { x: 0, y: 0 };
 window.addEventListener('pointermove', (event) => {
     pointerPosition.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     pointerPosition.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    isDragging = true;
 });
 
 
-const sphereGeometry = new THREE.SphereGeometry( 0.01, 32, 32 );
-const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } );
+const sphereGeometry = new THREE.SphereGeometry( 0.05, 32, 32 );
+const sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.1,transparent:true } );
 const sphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
 scene.add( sphere );
+
+
+window.addEventListener('pointerdown', () => {
+    isDragging = false;
+});
+
+const spherePositionWindow = document.createElement('div');
+spherePositionWindow.style.position = 'absolute';
+spherePositionWindow.style.top = '10px';
+spherePositionWindow.style.left = '10px';
+spherePositionWindow.style.padding = '5px';
+spherePositionWindow.style.background = 'rgba(0, 0, 0, 0.5)';
+spherePositionWindow.style.color = '#fff';
+document.body.appendChild(spherePositionWindow);
+
+window.addEventListener('pointerup', () => {
+    if (!isDragging) {
+        raycaster.setFromCamera(pointerPosition, camera);
+        const intersects = raycaster.intersectObject(points, false);
+        if (intersects.length > 0) {
+            console.log(intersects[0]);
+            sphere.material.opacity = 0.7;
+            sphere.position.copy(intersects[0].point);
+            spherePositionWindow.textContent = `Position: x: ${intersects[0].point.x.toFixed(2)}, y: ${intersects[0].point.y.toFixed(2)}, z: ${intersects[0].point.z.toFixed(2)}`;
+        } else {
+            sphere.material.opacity = 0;
+            spherePositionWindow.textContent = '';
+        }
+    }
+});
+
 
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
-    raycaster.setFromCamera(pointerPosition, camera);
-    const intersects = raycaster.intersectObject(points,false);
-    if (intersects.length > 0) {
-        console.log(intersects[0]);
-        sphere.position.copy( intersects[0].point );
-    }
-    // else {
-    //     points.material.opacity = 1;
-    // }
+
 
     // renderer.render(scene, camera);
     composer.render(scene, camera);

@@ -2,10 +2,10 @@
 - [ ] Textures and simple materials
 - [ ] Some kind of storytelling
 - [x] The representation of a dataset
-- [ ] Simple interactions between the user and the visualization
-- [ ] Some Post Processing effects
+- [x] Simple interactions between the user and the visualization
+- [x] Some Post Processing effects
 - [ ] Advanced textures (bump, normal, displacement, etc.)
 - [ ] Complex scene and interactions
 - [ ] Complex Animations
-- [ ] Custom Shaders
-- [ ] Deployed on a website (Github Pages or other)
+- [x] Custom Shaders
+- [x] Deployed on a website (Github Pages or other)
